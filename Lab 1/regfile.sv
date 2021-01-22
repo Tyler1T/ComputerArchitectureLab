@@ -1,6 +1,6 @@
-module regfile(input  logic        clk, 
-               input  logic        we3, 
-               input  logic [4:0]  ra1, ra2, wa3, 
+module regfile(input  logic        clk,
+               input  logic        write_enable,
+               input  logic [4:0]  ra1, ra2, wa3,
                input  logic [31:0] wd3, 
                output logic [31:0] rd1, rd2);
 
