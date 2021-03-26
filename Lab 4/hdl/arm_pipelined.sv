@@ -216,11 +216,77 @@ module controller (input  logic         clk, reset,
      if (ALUOpD)
        begin                 // which Data-processing Instr?
          case(InstrD[24:21])
-           4'b0100: ALUControlD = 2'b00; // ADD
-           4'b0010: ALUControlD = 2'b01; // SUB
-           4'b0000: ALUControlD = 2'b10; // AND
-           4'b1100: ALUControlD = 2'b11; // ORR
-           default: ALUControlD = 2'bx;  // unimplemented
+         4'b0100: begin
+                    ALUControl = 3'b000; // ADD
+                    noWrite = 0'b1;
+                    carryControl = 0'b0;
+                  end
+         4'b0101: begin
+                    ALUControl = 3'b000; // ADD + carry
+                    noWrite = 0'b1;
+                    carryControl = 1'b1;
+                  end
+         4'b0010: begin
+                    ALUControl = 3'b001; // SUB
+                    noWrite = 0'b1;
+                    carryControl = 0'b0;
+                  end
+         4'b0110: begin
+                    ALUControl = 3'b001; // SUB + carry
+                    noWrite = 0'b1;
+                    carryControl = 1'b0;
+                  end
+         4'b0000: begin
+                    ALUControl = 3'b010; // AND
+                    noWrite = 0'b1;
+                    carryControl = 0'b0;
+                  end
+         4'b1100: begin
+                    ALUControl = 3'b011; // ORR
+                    noWrite = 0'b1;
+                    carryControl = 0'b0;
+                  end
+         4'b1010: begin
+                    ALUControl = 3'b001; // CMP = SUB + noWrite
+                    noWrite = 1'b1;
+                    carryControl = 0'b0;
+                  end
+         4'b1001: begin
+                    ALUControl = 3'b110; // TEQ = EOR + noWrite
+                    noWrite = 1'b1;
+                    carryControl = 0'b0;
+                  end
+         4'b1000: begin
+                    ALUControl = 3'b010; // TST = AND + noWrite
+                    noWrite = 1'b1;
+                    carryControl = 0'b0;
+                  end
+         4'b1011: begin
+                    ALUControl = 3'b000; // CMN = ADD + noWrite
+                    noWrite = 1'b1;
+                    carryControl = 0'b0;
+                  end
+         4'b1111: begin
+                    ALUControl = 3'b101; // MVN
+                    noWrite = 0'b1;
+                    carryControl = 0'b0;
+                  end
+         4'b0001: begin
+                    ALUControl = 3'b110; //EOR
+                    noWrite = 0'b1;
+                    carryControl = 0'b0;
+                  end
+         4'b1110: begin
+                    ALUControl = 3'b100; //BIC = Rn & ~Src2
+                    noWrite = 0'b1;
+                    carryControl = 0'b0;
+                  end
+         4'b1101: begin
+                     ALUControl = 3'b111; //MOV
+                     noWrite = 0'b0;
+                     carryControl = 0'b0;
+                   end
+         default: ALUControl = 3'bx;  // unimplemented
          endcase
          FlagWriteD[1]   = InstrD[20];   // update N/Z Flags if S bit is set
          FlagWriteD[0]   = InstrD[20] &
