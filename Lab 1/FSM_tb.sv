@@ -2,22 +2,24 @@ module stimulus();
     logic clock;
     logic In;
     logic reset_b;
-    
+
     logic Out;
-    
+
+    //integer means that the data will be 32bit
     integer handle3;
     integer desc3;
-    
+
     // Instantiate DUT
     FSM dut(.Out(Out),
             .reset_b(reset_b),
             .clock(clock),
             .In(In));
 
-    // Setup the clock to toggle every 1 time units 
-    initial 
-      begin  
+    // Setup the clock to toggle every 1 time units
+    initial
+      begin
         clock = 1'b1;
+        //#5 means 1 time unit is 5ns
         forever #5 clock = ~clock;
       end
 
@@ -26,17 +28,17 @@ module stimulus();
         // Gives output file name
         handle3 = $fopen("test.out");
         // Tells when to finish simulation
-        #500 $finish;         
+        #500 $finish;
       end
 
-    always 
+    always
       begin
         desc3 = handle3;
         #5 $fdisplay(desc3, "%b %b || %b", reset_b, In, Out);
       end
 
-    initial 
-      begin 
+    initial
+      begin
         #0  reset_b = 1'b0;
         #12 reset_b = 1'b1;
         #0  In = 1'b0;
@@ -45,4 +47,3 @@ module stimulus();
       end
 
 endmodule // FSM_tb
-

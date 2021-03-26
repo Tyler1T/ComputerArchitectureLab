@@ -1,46 +1,35 @@
-module register (Out, reset_b, clock, In);
-    output logic [4:0] Out;
-    input  logic reset_b;
-    input  logic clock;
-    input  logic In;
+module regfile(input logic clk,
+               input logic write_enable,
+               input logic [4:0] ra1, ra2, wa3,
+               input logic [31:0] wd3,
+               output logic [31:0] rd1, rd2);
 
-    logic [1:0]  state;
-    logic [1:0]  nextState;
+logic [31:0]    RF[31:0];
+//This part assigns the read registers to whatever is in the registers at
+//the location specified
 
-    parameter S0 = 2'b00;
-    parameter S1 = 2'b01;
-    parameter S2 = 2'b10;
+always_comb
+  begin
+    if(ra1 == 5'b0) begin
+      assign rd1=0;
+    end else begin
+      assign rd1 = RF[ra1];
+    end
 
-    // State Register
-    always @ (posedge clock, negedge reset_b)
-      begin
-        if (~reset_b)
-            state <= S0;
-        else
-            state <= nextState;
-      end
+    if(ra2 == 5'b0) begin
+      assign rd2=0;
+    end else begin
+      assign rd2 = RF[ra2];
+    end
+  end
 
-    // Next State Logic
-    always_comb
-      begin
-        case(state)
-          S0: begin
-            nextState = In ? S2 : S0;
-            Out = In ? 0 : 1;
-          end
-          S1: begin
-            nextState = S0;
-            Out = 1'b1;
-          end
-          S2: begin
-            nextState = In ? S2 : S1;
-            Out = In ? 1 : 0;
-          end
-          default: begin
-            nextState = S0;
-            Out = 1'bx;
-          end
-        endcase
-      end
+//This section clears all registers when the reset line is pulled high
+always @(posedge clk) begin
+  if(write_enable) RF[wa3] <= wd3;
+end
 
-endmodule // FSM
+endmodule
+  // three ported register file
+  // read two ports combinatorially
+  // write third port on rising edge of clock
+  // register 0 hardwired to 0
