@@ -287,6 +287,7 @@ module controller (input  logic         clk, reset,
                      carryControl = 0'b0;
                    end
          default: ALUControl = 3'bx;  // unimplemented
+
          endcase
          FlagWriteD[1]   = InstrD[20];   // update N/Z Flags if S bit is set
          FlagWriteD[0]   = InstrD[20] &
@@ -828,3 +829,21 @@ module eqcmp #(parameter WIDTH = 8)
    assign y = (a == b);
 
 endmodule // eqcmp
+
+
+module shifter(input logic Ibit,
+                input logic [6:0] shiftIn,
+                input logic [31:0] dataIn,
+                output logic [31:0] dataOut);
+      logic [31:0] test;
+
+      always_comb
+        case(shiftIn[1:0])
+          2'b00: test = dataIn << shiftIn[6:2];
+          2'b01: test = dataIn >> shiftIn[6:2];
+          2'b10: test = dataIn >>> shiftIn[6:2];
+          2'b11: test = {dataIn, dataIn} >> (shiftIn[6:2]); // need to repeat this n times
+        endcase
+      assign dataOut = Ibit ? test : dataIn;
+
+endmodule // shifter
