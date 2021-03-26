@@ -83,13 +83,13 @@ module arm (input  logic        clk, reset,
             output logic        MemStrobe,
             input  logic        PCReady);
 
-   logic [2:0]  RegSrcD;
-   logic [1:0]  ImmSrcD, ALUControlE;
+   logic [2:0]  RegSrcD, ALUControlE;
+   logic [1:0]  ImmSrcD;
    logic        ALUSrcE, BranchTakenE, MemtoRegW,
                 PCSrcW, RegWriteW;
    logic [3:0]  ALUFlagsE;
    logic [31:0] InstrD;
-   logic        RegWriteM, MemtoRegE, PCWrPendingF;
+   logic        RegWriteM, MemtoRegE, PCWrPendingF, previousCarry, carryControl;
    logic [1:0]  ForwardAE, ForwardBE;
    logic        StallF, StallD, FlushD, FlushE;
    logic        Match_1E_M, Match_1E_W,
@@ -115,7 +115,9 @@ module arm (input  logic        clk, reset,
                  .PCWrPendingF(PCWrPendingF),
                  .FlushE(FlushE),
                  .MemStrobeM(MemStrobe),
-                 .MemSysReady(PCReady));
+                 .MemSysReady(PCReady),
+                 .previousCarry(previousCarry),
+                 .carryControl(carryControl));
    datapath dp (.clk(clk),
                 .reset(reset),
                 .RegSrcD(RegSrcD),
@@ -125,6 +127,8 @@ module arm (input  logic        clk, reset,
                 .ALUControlE(ALUControlE),
                 .MemtoRegW(MemtoRegW),
                 .PCSrcW(PCSrcW),
+                .previousCarry(previousCarry),
+                .carryControl(carryControl),
                 .RegWriteW(RegWriteW),
                 .PCF(PCF),
                 .InstrF(InstrF),
@@ -173,7 +177,7 @@ module controller (input  logic         clk, reset,
                    output logic [2:0]   RegSrcD,
                    output logic [1:0]   ImmSrcD,
                    output logic         ALUSrcE, BranchTakenE,
-                   output logic [1:0]   ALUControlE,
+                   output logic [2:0]   ALUControlE,
                    output logic         MemWriteM,
                    output logic         MemtoRegW, PCSrcW, RegWriteW,
                    // hazard interface
@@ -181,11 +185,13 @@ module controller (input  logic         clk, reset,
                    output logic         PCWrPendingF,
                    input  logic         FlushE,
                    output logic         MemStrobeM,
+                   output logic         previousCarry,
+                   output logic         carryControl,
                    input  logic         MemSysReady);
 
    logic [11:0] controlsD;
    logic        CondExE, ALUOpD;
-   logic [1:0]  ALUControlD;
+   logic [2:0]  ALUControlD;
    logic        ALUSrcD;
    logic        MemtoRegD, MemtoRegM;
    logic        RegWriteD, RegWriteE, RegWriteGatedE;
