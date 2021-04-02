@@ -115,9 +115,9 @@ module arm (input  logic        clk, reset,
                  .PCWrPendingF(PCWrPendingF),
                  .FlushE(FlushE),
                  .MemStrobeM(MemStrobe),
-                 .previousCarry(previousCarry),
-                 .carryControl(carryControl),
-                 .noWrite(noWrite),
+                 .previousCarryE(previousCarryE),
+                 .carryControlE(carryControlE),
+                 .noWriteE(noWriteE),
                  .MemSysReady(PCReady));
 
    datapath dp (.clk(clk),
@@ -188,9 +188,9 @@ module controller (input  logic         clk, reset,
                    output logic         PCWrPendingF,
                    input  logic         FlushE,
                    output logic         MemStrobeM,
-                   output logic         previousCarry,
-                   output logic         carryControl,
-                   output logic         noWrite,
+                   output logic         previousCarryE,
+                   output logic         carryControlE,
+                   output logic         noWriteE,
                    input  logic         MemSysReady);
 
    logic [11:0] controlsD;
