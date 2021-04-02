@@ -119,6 +119,7 @@ module arm (input  logic        clk, reset,
                  .carryControl(carryControl),
                  .noWrite(noWrite),
                  .MemSysReady(PCReady));
+
    datapath dp (.clk(clk),
                 .reset(reset),
                 .RegSrcD(RegSrcD),
@@ -150,6 +151,7 @@ module arm (input  logic        clk, reset,
                 .StallD(StallD),
                 .FlushD(FlushD),
                 .MemSysReady(PCReady));
+
    hazard h (.clk(clk),
              .reset(reset),
              .Match_1E_M(Match_1E_M),
@@ -225,76 +227,76 @@ module controller (input  logic         clk, reset,
        begin                 // which Data-processing Instr?
          case(InstrD[24:21])
          4'b0100: begin
-                    ALUControlE = 3'b000; // ADD
-                    noWrite = 0'b1;
-                    carryControl = 0'b0;
+                    ALUControlD = 3'b000; // ADD
+                    noWriteD = 0'b1;
+                    carryControlD = 0'b0;
                   end
          4'b0101: begin
-                    ALUControlE = 3'b000; // ADD + carry
-                    noWrite = 0'b1;
-                    carryControl = 1'b1;
+                    ALUControlD = 3'b000; // ADD + carry
+                    noWriteD = 0'b1;
+                    carryControlD = 1'b1;
                   end
          4'b0010: begin
-                    ALUControlE = 3'b001; // SUB
-                    noWrite = 0'b1;
-                    carryControl = 0'b0;
+                    ALUControlD = 3'b001; // SUB
+                    noWriteD = 0'b1;
+                    carryControlD = 0'b0;
                   end
          4'b0110: begin
-                    ALUControlE = 3'b001; // SUB + carry
-                    noWrite = 0'b1;
-                    carryControl = 1'b0;
+                    ALUControlD = 3'b001; // SUB + carry
+                    noWriteD = 0'b1;
+                    carryControlD = 1'b0;
                   end
          4'b0000: begin
-                    ALUControlE = 3'b010; // AND
-                    noWrite = 0'b1;
-                    carryControl = 0'b0;
+                    ALUControlD = 3'b010; // AND
+                    noWriteD = 0'b1;
+                    carryControlD = 0'b0;
                   end
          4'b1100: begin
-                    ALUControlE = 3'b011; // ORR
-                    noWrite = 0'b1;
-                    carryControl = 0'b0;
+                    ALUControlD = 3'b011; // ORR
+                    noWriteD = 0'b1;
+                    carryControlD = 0'b0;
                   end
          4'b1010: begin
-                    ALUControlE = 3'b001; // CMP = SUB + noWrite
-                    noWrite = 1'b1;
-                    carryControl = 0'b0;
+                    ALUControlD = 3'b001; // CMP = SUB + noWrite
+                    noWriteD = 1'b1;
+                    carryControlD = 0'b0;
                   end
          4'b1001: begin
-                    ALUControlE = 3'b110; // TEQ = EOR + noWrite
-                    noWrite = 1'b1;
-                    carryControl = 0'b0;
+                    ALUControlD = 3'b110; // TEQ = EOR + noWrite
+                    noWriteD = 1'b1;
+                    carryControlD = 0'b0;
                   end
          4'b1000: begin
-                    ALUControlE = 3'b010; // TST = AND + noWrite
-                    noWrite = 1'b1;
-                    carryControl = 0'b0;
+                    ALUControlD = 3'b010; // TST = AND + noWrite
+                    noWriteD = 1'b1;
+                    carryControlD = 0'b0;
                   end
          4'b1011: begin
-                    ALUControlE = 3'b000; // CMN = ADD + noWrite
-                    noWrite = 1'b1;
-                    carryControl = 0'b0;
+                    ALUControlD = 3'b000; // CMN = ADD + noWrite
+                    noWriteD = 1'b1;
+                    carryControlD = 0'b0;
                   end
          4'b1111: begin
-                    ALUControlE = 3'b101; // MVN
-                    noWrite = 0'b1;
-                    carryControl = 0'b0;
+                    ALUControlD = 3'b101; // MVN
+                    noWriteD = 0'b1;
+                    carryControlD = 0'b0;
                   end
          4'b0001: begin
-                    ALUControlE = 3'b110; //EOR
-                    noWrite = 0'b1;
-                    carryControl = 0'b0;
+                    ALUControlD = 3'b110; //EOR
+                    noWriteD = 0'b1;
+                    carryControlD = 0'b0;
                   end
          4'b1110: begin
-                    ALUControlE = 3'b100; //BIC = Rn & ~Src2
-                    noWrite = 0'b1;
-                    carryControl = 0'b0;
+                    ALUControlD = 3'b100; //BIC = Rn & ~Src2
+                    noWriteD = 0'b1;
+                    carryControlD = 0'b0;
                   end
          4'b1101: begin
-                     ALUControlE = 3'b111; //MOV
-                     noWrite = 0'b0;
-                     carryControl = 0'b0;
+                     ALUControlD = 3'b111; //MOV
+                     noWriteD = 0'b0;
+                     carryControlD = 0'b0;
                    end
-         default: ALUControlE = 3'bx;  // unimplemented
+         default: ALUControlD = 3'bx;  // unimplemented
 
          endcase
          FlagWriteD[1]   = InstrD[20];   // update N/Z Flags if S bit is set
@@ -303,7 +305,7 @@ module controller (input  logic         clk, reset,
        end
      else
        begin
-         ALUControlD     = 2'b00;        // perform addition for non-dp instr
+         ALUControlD     = 3'b000;        // perform addition for non-dp instr
          FlagWriteD      = 2'b00;        // don't update Flags
        end
 
@@ -315,9 +317,9 @@ module controller (input  logic         clk, reset,
                             .en(MemSysReady),
                             .clear(FlushE),
                             .d({FlagWriteD, BranchD, MemWriteD,
-                                RegWriteD, PCSrcD, MemtoRegD, MemStrobeD}),
+                                RegWriteD, PCSrcD, MemtoRegD, MemStrobeD, noWriteD}),
                             .q({FlagWriteE, BranchE, MemWriteE,
-                                RegWriteE, PCSrcE, MemtoRegE, MemStrobeE}));
+                                RegWriteE, PCSrcE, MemtoRegE, MemStrobeE, noWriteE}));
    flopenr #(3)  regsE(.clk(clk),
                      .reset(reset),
                      .en(MemSysReady),
