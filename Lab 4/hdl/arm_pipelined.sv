@@ -89,7 +89,7 @@ module arm (input  logic        clk, reset,
                 PCSrcW, RegWriteW;
    logic [3:0]  ALUFlagsE;
    logic [31:0] InstrD;
-   logic        RegWriteM, MemtoRegE, PCWrPendingF, previousCarry, carryControl, noWrite;
+   logic        RegWriteM, MemtoRegE, PCWrPendingF, previousCarryE, carryControlE, noWriteE;
    logic [1:0]  ForwardAE, ForwardBE;
    logic        StallF, StallD, FlushD, FlushE;
    logic        Match_1E_M, Match_1E_W,
@@ -117,7 +117,6 @@ module arm (input  logic        clk, reset,
                  .MemStrobeM(MemStrobe),
                  .previousCarryE(previousCarryE),
                  .carryControlE(carryControlE),
-                 .noWriteE(noWriteE),
                  .MemSysReady(PCReady));
 
    datapath dp (.clk(clk),
@@ -129,8 +128,8 @@ module arm (input  logic        clk, reset,
                 .ALUControlE(ALUControlE),
                 .MemtoRegW(MemtoRegW),
                 .PCSrcW(PCSrcW),
-                .previousCarry(previousCarry),
-                .carryControl(carryControl),
+                .previousCarryE(previousCarryE),
+                .carryControlE(carryControlE),
                 .RegWriteW(RegWriteW),
                 .PCF(PCF),
                 .InstrF(InstrF),
@@ -190,7 +189,6 @@ module controller (input  logic         clk, reset,
                    output logic         MemStrobeM,
                    output logic         previousCarryE,
                    output logic         carryControlE,
-                   output logic         noWriteE,
                    input  logic         MemSysReady);
 
    logic [11:0] controlsD;
@@ -205,6 +203,7 @@ module controller (input  logic         clk, reset,
    logic        PCSrcD, PCSrcE, PCSrcM;
    logic [3:0]  FlagsE, FlagsNextE, CondE;
    logic        MemStrobeD, MemStrobeE, MemStrobeGatedE;
+   logic        carryControlD, noWriteD;
 
    // Decode stage
    always_comb
@@ -312,15 +311,15 @@ module controller (input  logic         clk, reset,
    assign PCSrcD = (((InstrD[15:12] == 4'b1111) & RegWriteD) | BranchD);
 
    // Execute stage
-   flopenrc #(8) flushedregsE(.clk(clk),
+   flopenrc #(10) flushedregsE(.clk(clk),
                             .reset(reset),
                             .en(MemSysReady),
                             .clear(FlushE),
                             .d({FlagWriteD, BranchD, MemWriteD,
-                                RegWriteD, PCSrcD, MemtoRegD, MemStrobeD, noWriteD}),
+                                RegWriteD, PCSrcD, MemtoRegD, MemStrobeD, carryControlD, noWriteD}),
                             .q({FlagWriteE, BranchE, MemWriteE,
-                                RegWriteE, PCSrcE, MemtoRegE, MemStrobeE, noWriteE}));
-   flopenr #(3)  regsE(.clk(clk),
+                                RegWriteE, PCSrcE, MemtoRegE, MemStrobeE, carryControlE, noWriteE}));
+   flopenr #(4)  regsE(.clk(clk),
                      .reset(reset),
                      .en(MemSysReady),
                      .d({ALUSrcD, ALUControlD}),
@@ -343,9 +342,10 @@ module controller (input  logic         clk, reset,
                      .ALUFlags(ALUFlagsE),
                      .FlagsWrite(FlagWriteE),
                      .CondEx(CondExE),
-                     .FlagsNext(FlagsNextE));
+                     .FlagsNext(FlagsNextE),
+                     .previousCarryE(previousCarryE));
    assign BranchTakenE    = BranchE & CondExE;
-   assign RegWriteGatedE  = RegWriteE & CondExE;
+   assign RegWriteGatedE  = RegWriteE & CondExE & ~noWriteD;
    assign MemWriteGatedE  = MemWriteE & CondExE;
    assign PCSrcGatedE     = PCSrcE & CondExE;
    assign MemStrobeGatedE = MemStrobeE & CondExE;
@@ -376,7 +376,8 @@ module conditional (input  logic [3:0] Cond,
                     input  logic [3:0] ALUFlags,
                     input  logic [1:0] FlagsWrite,
                     output logic       CondEx,
-                    output logic [3:0] FlagsNext);
+                    output logic [3:0] FlagsNext,
+                    output logic       previousCarryE);
 
    logic                   neg, zero, carry, overflow, ge;
 
@@ -408,14 +409,18 @@ module conditional (input  logic [3:0] Cond,
    assign FlagsNext[1:0] = (FlagsWrite[0] & CondEx) ?
                             ALUFlags[1:0] : Flags[1:0];
 
+   assign previousCarryE = Flags[1];
+
 endmodule // conditional
 
 module datapath (input  logic        clk, reset,
                  input  logic [2:0]  RegSrcD,
                  input  logic [1:0]  ImmSrcD,
                  input  logic        ALUSrcE, BranchTakenE,
-                 input  logic [1:0]  ALUControlE,
-                 input  logic        MemtoRegW, PCSrcW, RegWriteW,
+                 input  logic [2:0]  ALUControlE,
+                 input  logic        MemtoRegW, PCSrcW,
+                 input  logic        previousCarryE, carryControlE,
+                 input  logic        RegWriteW,
                  output logic [31:0] PCF,
                  input  logic [31:0] InstrF,
                  output logic [31:0] InstrD,
@@ -560,6 +565,8 @@ module datapath (input  logic        clk, reset,
    alu         alu (.a(SrcAE),
                     .b(SrcBE),
                     .ALUControl(ALUControlE),
+                    .previousCarryE(previousCarryE),
+                    .carryControlE(carryControlE),
                     .Result(ALUResultE),
                     .Flags(ALUFlagsE));
 
@@ -725,7 +732,8 @@ module extend (input  logic [23:0] Instr,
 endmodule // extend
 
 module alu (input  logic [31:0] a, b,
-            input  logic [1:0]  ALUControl,
+            input  logic [2:0]  ALUControl,
+            input  logic previousCarryE, carryControlE,
             output logic [31:0] Result,
             output logic [3:0]  Flags);
 
